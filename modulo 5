@@ -1,0 +1,88 @@
+==================================
+practica 1
+=================================
+mkdir salud
+cd salud
+touch archivo{1..100}.txt
+
+rsync -avz salud albert@10.0.0.99:/home/albert/
+
+nano sync.sh
+
+#!/bin/bash
+/usr/bin/rsync -avz /home/usuario/carpeta_sync usuario@IP_SERVIDOR_SECUNDARIO:/home/usuario/
+
+chmod +x sync.sh
+
+crontab -e
+
+* * * * * /home/albert/sync.sh
+
+touch /home/albert/salud/prueba.txt
+
+ls -l
+
+
+
+================================
+practica 2
+================================
+
+
+sudo systemctl stop pacemaker
+sudo systemctl stop corosync
+sudo systemctl stop pcsd
+
+sudo apt purge pacemaker corosync pcs -y
+sudo apt autoremove -y
+
+sudo rm -rf /etc/corosync/*
+sudo rm -rf /var/lib/corosync/*
+sudo rm -rf /var/lib/pacemaker/*
+sudo rm -rf /var/lib/pcsd/*
+sudo nano /etc/hosts
+
+127.0.0.1 localhost
+
+10.0.0.50 node1
+10.0.0.100 node2
+
+::1 localhost ip6-localhost ip6-loopback
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+
+ping node1
+ping node2
+getent hosts node1
+
+sudo hostnamectl set-hostname node1
+sudo hostnamectl set-hostname node2
+
+sudo apt update
+sudo apt install pacemaker corosync pcs -y
+
+sudo systemctl enable pcsd
+sudo systemctl start pcsd
+sudo systemctl restart pcsd
+sudo passwd hacluster
+sudo pcs host auth node1 node2 -u hacluster
+sudo pcs cluster setup clusterHA node1 node2
+sudo pcs cluster start --all
+sudo pcs cluster enable --all
+sudo pcs property set stonith-enabled=false
+sudo pcs property set no-quorum-policy=ignore
+sudo pcs resource create IPflotante ocf:heartbeat:IPaddr2 ip=10.0.0.200 cidr_netmask=24 op monitor interval=30s
+sudo pcs status
+sudo crm_mon -1
+ip a
+sudo pcs status
+sudo crm_mon -1
+ip a
+
+
+
+
+
+
+
