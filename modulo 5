@@ -1,28 +1,89 @@
 ==================================
-practica 1
+practica 1 sincronizacion con rsync
 =================================
-mkdir salud
-cd salud
-touch archivo{1..100}.txt
+Descripción
 
-rsync -avz salud albert@10.0.0.99:/home/albert/
+En esta práctica se implementa la sincronización de archivos entre dos servidores Linux utilizando rsync. Se automatiza el proceso mediante un script y una tarea programada con cron.
 
-nano sync.sh
+Escenario
+
+Servidor Primario (Origen):
+usuario@IP_PRIMARIO
+
+Servidor Secundario (Destino):
+usuario@IP_SECUNDARIO
+
+Carpeta a sincronizar: ola
+
+Paso 1: Crear carpeta y archivos (EN SERVIDOR PRIMARIO)
+
+Comandos a ejecutar en el servidor primario:
+
+mkdir -p ~/ola
+cd ~/ola
+touch archivo_{1..100}.txt
+
+Explicación:
+Se crea la carpeta "ola" y dentro se generan 100 archivos automáticamente usando expansión de llaves.
+
+Paso 2: Verificar conexión SSH (EN SERVIDOR PRIMARIO)
+
+ssh usuario@IP_SECUNDARIO
+
+Paso 3: Sincronización manual con rsync (EN SERVIDOR PRIMARIO)
+
+rsync -avz ~/ola/ usuario@IP_SECUNDARIO:/home/usuario/ola/
+
+Paso 4: Verificar archivos (EN SERVIDOR SECUNDARIO) con ls ~/ola/
+
+Paso 5: Crear script de automatización (EN SERVIDOR PRIMARIO)
+
+nano ~/sync_ola.sh
+
+Contenido del script:
 
 #!/bin/bash
-/usr/bin/rsync -avz /home/usuario/carpeta_sync usuario@IP_SERVIDOR_SECUNDARIO:/home/usuario/
+rsync -avz /home/usuario/ola/ usuario@IP_SECUNDARIO:/home/usuario/ola/
 
-chmod +x sync.sh
+Guardar y dar permisos:
+
+chmod +x ~/sync_ola.sh
+
+Paso 6: Configurar autenticación sin contraseña (EN SERVIDOR PRIMARIO)
+
+Para que la automatización funcione correctamente con cron, es necesario configurar acceso SSH sin contraseña.
+
+Generar clave SSH:
+
+ssh-keygen
+
+Copiar clave al servidor secundario:
+
+ssh-copy-id usuario@IP_SECUNDARIO
+
+Verificar acceso:
+
+ssh usuario@IP_SECUNDARIO
+
+Paso 7: Programar tarea con cron (EN SERVIDOR PRIMARIO)
 
 crontab -e
 
-* * * * * /home/albert/sync.sh
+Agregar la siguiente línea:
 
-touch /home/albert/salud/prueba.txt
+* * * * * /home/usuario/sync_ola.sh
 
-ls -l
+Paso 8: Prueba de funcionamiento
 
+EN SERVIDOR PRIMARIO:
 
+touch ~/ola/prueba.txt
+
+Esperar 1 minuto.
+
+EN SERVIDOR SECUNDARIO:
+
+ls /home/usuario/ola
 
 ================================
 practica 2
