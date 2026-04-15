@@ -1,0 +1,30 @@
+Errores comunes y soluciones
+Error: No such file or directory
+Causa: La carpeta origen no existe.
+Solución:
+Verificar con: ls ~/
+Crear la carpeta nuevamente
+Error: Permission denied
+Causa: Problemas de autenticación SSH o permisos.
+Soluciones:
+Verificar credenciales del usuario
+Configurar claves SSH correctamente
+Verificar permisos de las carpetas
+Error: Connection refused
+Causa: El servicio SSH no está activo en el servidor secundario.
+Solución:
+sudo systemctl start ssh
+Error: Solicitud de contraseña en cron
+Causa: No se ha configurado autenticación sin contraseña.
+Solución:
+Configurar claves SSH con ssh-keygen y ssh-copy-id
+Error: Ruta incorrecta
+Causa: Uso incorrecto de rutas relativas o absolutas.
+Solución:
+Verificar con: pwd
+Usar rutas completas
+Rsync no copia archivos
+Causa: Carpeta vacía o mal especificada.
+Solución:
+Verificar contenido con: ls
+Revisar uso correcto de "/" al final de la ruta
