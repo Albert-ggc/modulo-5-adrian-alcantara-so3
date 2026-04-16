@@ -86,64 +86,202 @@ EN SERVIDOR SECUNDARIO:
 ls /home/usuario/ola
 
 ================================
-practica 2
+practica 2 Instalacion y configuracion de cluster
 ================================
 
+Descripción
 
-sudo systemctl stop pacemaker
-sudo systemctl stop corosync
-sudo systemctl stop pcsd
+En esta práctica se implementa un cluster de alta disponibilidad (HA) utilizando Corosync y Pacemaker en dos nodos Linux (Kali). Se configura una IP flotante que permite mantener la disponibilidad del servicio incluso ante fallos de uno de los nodos.
 
-sudo apt purge pacemaker corosync pcs -y
-sudo apt autoremove -y
+Escenario
 
-sudo rm -rf /etc/corosync/*
-sudo rm -rf /var/lib/corosync/*
-sudo rm -rf /var/lib/pacemaker/*
-sudo rm -rf /var/lib/pcsd/*
-sudo nano /etc/hosts
+Nodo 1:
+usuario@IP_NODO1
 
-127.0.0.1 localhost
+Nodo 2:
+usuario@IP_NODO2
 
-10.0.0.50 node1
-10.0.0.100 node2
+IP flotante:
+IP_FLOTANTE
 
-::1 localhost ip6-localhost ip6-loopback
-ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
+Modo de red: Bridge
 
-
-ping node1
-ping node2
-getent hosts node1
-
-sudo hostnamectl set-hostname node1
-sudo hostnamectl set-hostname node2
+Paso 1: Instalación de paquetes (EN AMBOS NODOS)
 
 sudo apt update
-sudo apt install pacemaker corosync pcs -y
+sudo apt install corosync pacemaker crmsh resource-agents -y
 
-sudo systemctl enable pcsd
-sudo systemctl start pcsd
-sudo systemctl restart pcsd
-sudo passwd hacluster
-sudo pcs host auth node1 node2 -u hacluster
-sudo pcs cluster setup clusterHA node1 node2
-sudo pcs cluster start --all
-sudo pcs cluster enable --all
-sudo pcs property set stonith-enabled=false
-sudo pcs property set no-quorum-policy=ignore
-sudo pcs resource create IPflotante ocf:heartbeat:IPaddr2 ip=10.0.0.200 cidr_netmask=24 op monitor interval=30s
-sudo pcs status
-sudo crm_mon -1
+Paso 2: Configuración de hostnames (EN AMBOS NODOS)
+
+Verificar hostname:
+
+hostname
+
+Asignar nombre único:
+
+Nodo 1:
+sudo hostnamectl set-hostname nodo1
+
+Nodo 2:
+sudo hostnamectl set-hostname nodo2
+
+Editar archivo:
+
+sudo nano /etc/hostname
+
+Configurar /etc/hosts:
+
+127.0.0.1 localhost
+IP_NODO1 nodo1
+IP_NODO2 nodo2
+
+Reiniciar:
+
+sudo reboot
+
+Explicación:
+Cada nodo debe tener un identificador único para que el cluster funcione correctamente.
+
+Paso 3: Configuración de Corosync (EN AMBOS NODOS)
+
+Editar archivo:
+
+sudo nano /etc/corosync/corosync.conf
+
+Contenido:
+
+totem {
+version: 2
+secauth: off
+cluster_name: mi_cluster
+transport: udpu
+}
+
+nodelist {
+node {
+ring0_addr: IP_NODO1
+nodeid: 1
+}
+node {
+ring0_addr: IP_NODO2
+nodeid: 2
+}
+}
+
+quorum {
+provider: corosync_votequorum
+two_node: 1
+}
+
+logging {
+to_syslog: yes
+}
+
+Explicación:
+Define los nodos del cluster y la comunicación entre ellos.
+
+Paso 4: Iniciar servicios (EN AMBOS NODOS)
+
+sudo systemctl enable corosync pacemaker
+sudo systemctl start corosync
+sudo systemctl start pacemaker
+
+Verificar:
+
+sudo crm_mon
+
+Resultado esperado:
+
+Online: [ nodo1 nodo2 ]
+
+Paso 5: Configuración del cluster
+
+Desactivar STONITH (entorno de laboratorio):
+
+sudo crm configure property stonith-enabled=false
+
+Configurar política de quorum:
+
+sudo crm configure property no-quorum-policy=ignore
+
+Reiniciar servicios:
+
+sudo systemctl restart corosync
+sudo systemctl restart pacemaker
+
+Paso 6: Creación de IP flotante
+
+sudo crm configure primitive IPFlotante ocf:heartbeat:IPaddr2
+params ip=IP_FLOTANTE cidr_netmask=24 nic=eth0
+op monitor interval=30s
+
+Paso 7: Verificación del recurso
+
+sudo crm_mon
+
+Resultado esperado:
+
+IPFlotante (ocf:heartbeat:IPaddr2): Started nodo1
+
+Verificar IP:
+
 ip a
-sudo pcs status
-sudo crm_mon -1
-ip a
 
+Paso 8: Prueba de conectividad
 
+ping IP_FLOTANTE
 
+Paso 9: Prueba de alta disponibilidad (Failover)
 
+En el nodo activo:
 
+sudo systemctl stop pacemaker
 
+o
 
+sudo reboot
+
+Resultado esperado:
+
+La IP flotante se mueve al otro nodo
+El ping se mantiene activo
+
+Errores encontrados y soluciones
+Error: pcs.service not found
+Causa: Kali no incluye el servicio pcsd
+Solución:
+Usar configuración manual con corosync y pacemaker
+Error: comandos pcs no funcionan correctamente
+Causa: Incompatibilidad de versión en Kali
+Solución:
+No usar pcs
+Usar crmsh
+Error: solo un nodo aparece online
+Causa: Ambos nodos tenían el mismo hostname
+Solución:
+Asignar hostnames únicos
+Configurar /etc/hosts correctamente
+Error: IP flotante en estado stopped
+Causa: STONITH habilitado sin configuración
+Solución:
+Desactivar stonith-enabled
+Error: crm command not found
+Causa: crmsh no instalado
+Solución:
+sudo apt install crmsh
+Error: IP no se asigna
+Causa:
+IP en uso
+Interfaz no especificada
+Solución:
+Usar IP libre
+Definir nic=eth0
+Error: cluster no levanta correctamente
+Causa: configuración incorrecta de corosync
+Solución:
+Verificar archivo corosync.conf
+Asegurar que ambos nodos tengan la misma configuración
+Error: ping falla
+Causa: firewall o red mal configurada
+Solución:
+sudo systemctl stop ufw
