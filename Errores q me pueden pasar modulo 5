@@ -28,3 +28,48 @@ Causa: Carpeta vacía o mal especificada.
 Solución:
 Verificar contenido con: ls
 Revisar uso correcto de "/" al final de la ruta
+
+
+practica2:
+Errores encontrados y soluciones
+Error: pcs.service not found
+Causa: Kali no incluye el servicio pcsd
+Solución:
+Usar configuración manual con corosync y pacemaker
+Error: comandos pcs no funcionan correctamente
+Causa: Incompatibilidad de versión en Kali
+Solución:
+No usar pcs
+Usar crmsh
+Error: solo un nodo aparece online
+Causa: Ambos nodos tenían el mismo hostname
+Solución:
+Asignar hostnames únicos
+Configurar /etc/hosts correctamente
+Error: IP flotante en estado stopped
+Causa: STONITH habilitado sin configuración
+Solución:
+Desactivar stonith-enabled
+Error: crm command not found
+Causa: crmsh no instalado
+Solución:
+sudo apt install crmsh
+Error: IP no se asigna
+Causa:
+IP en uso
+Interfaz no especificada
+Solución:
+Usar IP libre
+Definir nic=eth0
+Error: cluster no levanta correctamente
+Causa: configuración incorrecta de corosync
+Solución:
+Verificar archivo corosync.conf
+Asegurar que ambos nodos tengan la misma configuración
+Error: ping falla
+Causa: firewall o red mal configurada
+Solución:
+sudo systemctl stop ufw
+
+
+practica 3:
