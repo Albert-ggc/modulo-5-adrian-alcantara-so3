@@ -246,42 +246,140 @@ Resultado esperado:
 La IP flotante se mueve al otro nodo
 El ping se mantiene activo
 
-Errores encontrados y soluciones
-Error: pcs.service not found
-Causa: Kali no incluye el servicio pcsd
-Solución:
-Usar configuración manual con corosync y pacemaker
-Error: comandos pcs no funcionan correctamente
-Causa: Incompatibilidad de versión en Kali
-Solución:
-No usar pcs
-Usar crmsh
-Error: solo un nodo aparece online
-Causa: Ambos nodos tenían el mismo hostname
-Solución:
-Asignar hostnames únicos
-Configurar /etc/hosts correctamente
-Error: IP flotante en estado stopped
-Causa: STONITH habilitado sin configuración
-Solución:
-Desactivar stonith-enabled
-Error: crm command not found
-Causa: crmsh no instalado
-Solución:
-sudo apt install crmsh
-Error: IP no se asigna
-Causa:
-IP en uso
-Interfaz no especificada
-Solución:
-Usar IP libre
-Definir nic=eth0
-Error: cluster no levanta correctamente
-Causa: configuración incorrecta de corosync
-Solución:
-Verificar archivo corosync.conf
-Asegurar que ambos nodos tengan la misma configuración
-Error: ping falla
-Causa: firewall o red mal configurada
-Solución:
-sudo systemctl stop ufw
+========================================================
+Practica 3 cluster de alta disponibilidad http nginx
+
+=========================================================
+Descripción
+
+En esta práctica se implementa un servicio web de alta disponibilidad utilizando dos servidores Linux con Apache o NGINX y Keepalived. Se configura una IP flotante (VIP) mediante VRRP que permite mantener el servicio HTTP disponible incluso si uno de los servidores falla.
+
+Escenario
+
+Servidor 1 (MASTER):
+usuario@IP_NODO1
+
+Servidor 2 (BACKUP):
+usuario@IP_NODO2
+
+IP flotante (VIP):
+IP_FLOTANTE
+
+Modo de red: Bridge
+
+Paso 1: Instalación del servidor web (EN AMBOS NODOS)
+
+sudo apt update
+sudo apt install apache2 -y
+
+(Alternativa: nginx)
+
+sudo systemctl enable apache2
+sudo systemctl start apache2
+
+Paso 2: Crear página web personalizada
+
+EN SERVIDOR 1:
+
+sudo nano /var/www/html/index.html
+
+Contenido:
+
+<h1>Servidor 1</h1> <p>Este es el nodo activo</p>
+
+EN SERVIDOR 2:
+
+sudo nano /var/www/html/index.html
+
+Contenido:
+
+<h1>Servidor 2</h1> <p>Este es el nodo de respaldo</p>
+Paso 3: Verificar servicio web
+
+curl http://IP_NODO1
+curl http://IP_NODO2
+
+Cada servidor debe mostrar su propia página.
+
+Paso 4: Instalar Keepalived (EN AMBOS NODOS)
+
+sudo apt install keepalived -y
+
+Paso 5: Configuración de Keepalived
+
+EN SERVIDOR 1 (MASTER):
+
+sudo nano /etc/keepalived/keepalived.conf
+
+Contenido:
+
+vrrp_instance VI_1 {
+state MASTER
+interface eth0
+virtual_router_id 51
+priority 100
+advert_int 1
+authentication {
+auth_type PASS
+auth_pass 1234
+}
+virtual_ipaddress {
+IP_FLOTANTE
+}
+}
+
+EN SERVIDOR 2 (BACKUP):
+
+sudo nano /etc/keepalived/keepalived.conf
+
+Contenido:
+
+vrrp_instance VI_1 {
+state BACKUP
+interface eth0
+virtual_router_id 51
+priority 90
+advert_int 1
+authentication {
+auth_type PASS
+auth_pass 1234
+}
+virtual_ipaddress {
+IP_FLOTANTE
+}
+}
+
+Paso 6: Iniciar Keepalived
+
+sudo systemctl enable keepalived
+sudo systemctl start keepalived
+
+Paso 7: Verificar IP flotante
+
+ip a
+
+Debe aparecer la IP flotante en el nodo MASTER.
+
+Paso 8: Probar acceso al servicio
+
+Abrir en navegador:
+
+http://IP_FLOTANTE
+
+Debe mostrar la página del Servidor 1.
+
+Paso 9: Prueba de alta disponibilidad (Failover)
+
+En el servidor MASTER:
+
+sudo systemctl stop keepalived
+
+o
+
+sudo reboot
+
+Resultado esperado:
+
+La IP flotante pasa al Servidor 2
+El servicio web sigue disponible
+El navegador ahora muestra “Servidor 2”
