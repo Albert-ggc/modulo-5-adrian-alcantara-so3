@@ -73,3 +73,27 @@ sudo systemctl stop ufw
 
 
 practica 3:
+
+Errores comunes y soluciones
+IP flotante no aparece
+Causa: Keepalived no iniciado
+Solución:
+sudo systemctl restart keepalived
+Ambos nodos tienen la IP flotante
+Causa: Configuración incorrecta
+Solución:
+Verificar virtual_router_id
+Verificar prioridad (MASTER mayor que BACKUP)
+No hay failover
+Causa: Keepalived no detecta fallo
+Solución:
+journalctl -u keepalived
+No responde el navegador
+Causa: Apache detenido
+Solución:
+sudo systemctl restart apache2
+Interfaz incorrecta
+Causa: Nombre de interfaz distinto
+Solución:
+ip a
+y cambiar "eth0" por la interfaz correcta
